@@ -18,16 +18,6 @@
         install =
           "npm ci --prefer-offline --no-audit --no-progress --timing && npm i @expo/ngrok@^4.1.0 && npm install -g eas-cli";
       };
-      # Runs when a workspace restarted
-      onStart = {
-        android = ''
-          echo -e "\033[1;3dWaiting for Android emulator to be ready...\033[0m"
-          /usr/bin/wait-for-it.sh -t 0 localhost:5555 -- \
-            /usr/bin/wait-for-it.sh -t 0 localhost:5554 -- \
-            /usr/bin/suite --background=/usr/bin/emulator-is-ready.sh \
-              --foreground=npm run android -- --tunnel
-        '';
-      };
     };
     previews = {
       enable = true;
