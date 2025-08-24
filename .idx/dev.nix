@@ -21,19 +21,22 @@
     };
     previews = {
       enable = true;
-      previews = [
-        {
-          # The Android emulator
-          id = "android";
-          # The following starts the Android emulator and Expo, and connects them.
-          start = ''
-            echo -e "\033[1;3dStarting Android emulator...\033[0m"
-            /usr/bin/emulator-is-ready.sh &
-            /usr/bin/suite --background=/usr/bin/emulator-is-ready.sh \
-              --foreground=npm run android -- --tunnel
-          '';
-        }
-      ];
+      previews = {
+        android = {
+          manager = "android";
+          command = [
+            "echo"
+            "-e"
+            "\"\\033[1;3dStarting Android emulator...\\033[0m\""
+            "&&"
+            "/usr/bin/emulator-is-ready.sh"
+            "&"
+            "/usr/bin/suite"
+            "--background=/usr/bin/emulator-is-ready.sh"
+            "--foreground=npm run android -- --tunnel"
+          ];
+        };
+      };
     };
   };
 }
