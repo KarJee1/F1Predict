@@ -1,5 +1,5 @@
 import { db } from '@/constants/firebaseConfig';
-import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, limit, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
@@ -35,19 +35,17 @@ const PredictScreen = () => {
     const fetchNextRace = async () => {
       try {
         const racesCollection = collection(db, 'races');
-        const now = new Date();
-        const nowISO = now.toISOString();
+        const now = new Date().toISOString();
         const q = query(
           racesCollection,
-          where('sessions.race_start_utc', '>', nowISO),
+          where('sessions.race_start_utc', '>', now),
           orderBy('sessions.race_start_utc'),
           limit(1)
         );
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
-          const doc = querySnapshot.docs[0];
-          const raceData = doc.data() as Omit<Race, 'id'>;
-          setNextRace({ id: doc.id, ...raceData });
+          const raceData = querySnapshot.docs[0].data() as Omit<Race, 'id'>;
+          setNextRace({ id: querySnapshot.docs[0].id, ...raceData });
         }
       } catch (error) {
         console.error("Error fetching next race: ", error);
