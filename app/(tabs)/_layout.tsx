@@ -54,9 +54,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="statistics"
+        name="vote"
         options={{
-          tabBarLabel: 'Statistics',
+          tabBarLabel: 'Vote',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
         }}
       />
@@ -65,6 +65,13 @@ export default function TabLayout() {
         options={{
           tabBarLabel: 'Leaderboard',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.3.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="auth"
+        options={{
+          tabBarLabel: 'Auth',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle" color={color} />,
         }}
       />
     </Tabs>

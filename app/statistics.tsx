@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
 
 const data = [
   { name: 'Max Verstappen', width: '30%' },
@@ -90,20 +89,20 @@ const styles = StyleSheet.create({
   barChart: {
     minHeight: 180,
     paddingVertical: 12,
-    gap: 24, // Replicates gap-y-6
+    gap: 24, 
   },
   barRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 16, // Gives a consistent height for the bar track
-    gap: 16, // Replicates gap-x-4
+    height: 16,
+    gap: 16, 
   },
   barLabel: {
     color: '#c89393',
     fontSize: 13,
     fontWeight: 'bold',
     letterSpacing: 0.2,
-    width: 110, // Provides alignment for the bars
+    width: 110,
   },
   barContainer: {
     flex: 1,
