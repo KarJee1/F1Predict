@@ -42,7 +42,7 @@ export default function TabLayout() {
         name="index"
         options={{
           tabBarLabel: 'Home',
-          headerShown: false,
+          headerShown: true,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
@@ -68,9 +68,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="auth"
+        name="profile"
         options={{
-          tabBarLabel: 'Auth',
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle" color={color} />,
         }}
       />

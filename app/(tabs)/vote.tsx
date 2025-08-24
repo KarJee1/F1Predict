@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import { collection, getDocs, query, orderBy, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/constants/firebaseConfig';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface Driver {
   id: string;
@@ -17,29 +19,68 @@ interface Driver {
 const VoteScreen = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const fetchDrivers = async () => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const fetchDriverData = async () => {
+      setLoading(true);
       try {
+        // First, fetch all driver data
         const driversCollection = collection(db, 'drivers');
-        const q = query(driversCollection, orderBy("win_probability", "desc"));
-        const querySnapshot = await getDocs(q);
-        const driversData = querySnapshot.docs.map(doc => ({
+        const driversSnapshot = await getDocs(driversCollection);
+        const driversData = driversSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         })) as Driver[];
-        setDrivers(driversData);
+        const driversMap = new Map(driversData.map(d => [d.id, d]));
+
+        if (user) {
+          // If user is logged in, try to fetch their prediction
+          const predictionDocRef = doc(db, 'user_prediction', user.uid);
+          const predictionDoc = await getDoc(predictionDocRef);
+
+          if (predictionDoc.exists()) {
+            // If prediction exists, sort drivers based on saved order
+            const prediction = predictionDoc.data().prediction as { driverId: string; predictedPosition: number }[];
+            const sortedDrivers = prediction
+              .sort((a, b) => a.predictedPosition - b.predictedPosition)
+              .map(p => driversMap.get(p.driverId))
+              .filter((d): d is Driver => d !== undefined);
+            setDrivers(sortedDrivers);
+          } else {
+            // If no prediction, sort by win probability
+            const sortedByWinProb = [...driversData].sort((a, b) => b.win_probability - a.win_probability);
+            setDrivers(sortedByWinProb);
+          }
+        } else {
+          // If not logged in, sort by win probability
+          const sortedByWinProb = [...driversData].sort((a, b) => b.win_probability - a.win_probability);
+          setDrivers(sortedByWinProb);
+        }
       } catch (error) {
-        console.error("Error fetching drivers: ", error);
+        console.error("Error fetching data: ", error);
+        // Fallback to default sorting in case of error
+        const driversCollection = collection(db, 'drivers');
+        const q = query(driversCollection, orderBy("win_probability", "desc"));
+        const querySnapshot = await getDocs(q);
+        const driversData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Driver[];
+        setDrivers(driversData);
       } finally {
         setLoading(false);
       }
     };
-    fetchDrivers();
-  }, []);
+
+    fetchDriverData();
+  }, [user]);
 
   const savePrediction = async () => {
-    const user = auth.currentUser;
     if (!user) {
       Alert.alert("Authentication Required", "You must be logged in to save a prediction.");
       return;
@@ -49,8 +90,10 @@ const VoteScreen = () => {
         driverId: driver.id,
         predictedPosition: index + 1,
       }));
-      await setDoc(doc(db, "predictions", user.uid), {
+      await setDoc(doc(db, "user_prediction", user.uid), {
         userId: user.uid,
+        userEmail: user.email,
+        userDisplayName: user.displayName,
         prediction: predictionData,
         createdAt: new Date(),
       });
@@ -95,17 +138,23 @@ const VoteScreen = () => {
         renderItem={renderItem}
         ListHeaderComponent={() => (
           <View>
-            <Text style={styles.driversHeader}>Predict Finishing Positions</Text>
-            <TouchableOpacity onPress={() => router.push('/statistics')}>
-              <Text style={styles.linkText}>View Statistics</Text>
-            </TouchableOpacity>
+            <LinearGradient
+              colors={['#890f0f', '#221111']}
+              style={styles.gradient}
+            >
+              <Text style={styles.driversHeader}>Predict Finishing Positions</Text>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button} onPress={savePrediction}>
+                  <Text style={styles.buttonText}>Save My Prediction</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={() => router.push('/statistics')}>
+                  <Text style={styles.buttonText}>View Statistics</Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
           </View>
         )}
-        ListFooterComponent={() => (
-          <TouchableOpacity style={styles.saveButton} onPress={savePrediction}>
-            <Text style={styles.saveButtonText}>Save My Prediction</Text>
-          </TouchableOpacity>
-        )}
+        ListFooterComponent={<View style={{ height: 100 }} />}
       />
     </GestureHandlerRootView>
   );
@@ -128,12 +177,29 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 12,
         paddingTop: 20,
-      },
-      linkText: {
-        color: '#c99292',
         textAlign: 'center',
+      },
+      gradient: {
         paddingBottom: 20,
+      },
+      buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        paddingHorizontal: 16,
+      },
+      button: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 9999,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+        marginHorizontal: 8,
+      },
+      buttonText: {
+        color: 'white',
         fontSize: 16,
+        fontWeight: 'bold',
       },
       driverContainer: {
         flexDirection: 'row',
@@ -173,19 +239,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
       },
       driverPosition: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-      },
-      saveButton: {
-        backgroundColor: '#890f0f',
-        borderRadius: 9999,
-        height: 48,
-        alignItems: 'center',
-        justifyContent: 'center',
-        margin: 16,
-      },
-      saveButtonText: {
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',

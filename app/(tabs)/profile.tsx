@@ -1,14 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import { Svg, Path } from 'react-native-svg';
-import { User, signOut } from 'firebase/auth';
+import { User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/constants/firebaseConfig';
+import AuthHub from '@/components/AuthHub'; // Import the AuthHub component
 
-interface ProfileScreenProps {
-  user: User;
-}
+const Profile = () => {
+  const [user, setUser] = useState<User | null>(null);
 
-const ProfileScreen: React.FC<ProfileScreenProps> = ({ user }) => {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -29,6 +36,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ user }) => {
       )}
     </View>
   );
+
+  if (!user) {
+    return <AuthHub />;
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -131,4 +142,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen;
+export default Profile;

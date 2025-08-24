@@ -1,51 +1,132 @@
-import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, FlatList } from 'react-native';
+import { fetchNews, fetchTopVideos } from '@/api/news';
 
-const WelcomeScreen = () => {
-  return (
-    <ImageBackground
-      source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDq1IshCi3JBufi-90rMfZ7n-W35Kw6Eykq7-bht0_td2YW1ZNA8nnLzq47ZdM3gTSDO2OBbRhmshd0Rxar7y3vRfjQArKWHjJ2rH_xv0xJICJ9PA_7yLjM4DPGrHDKgKEO92Yh9HFGzdsPRW2VyKt0POAI6GhnrmjYXypUV4Fq0ohEOt0aAW498wv3dl-vLOXmRKPj0wkFeuJYI0lnN7UOCUosqhMuIhPPPuR-cKPRr_Psu60D-I-xNWhigq5R7l6Nt5staRRxRlq-' }}
-      style={styles.backgroundImage}
-    >
-      <View style={styles.container}>
-        <View />
-        <View>
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>Get Started</Text>
-          </TouchableOpacity>
-          <View style={styles.bottomSpacer} />
-        </View>
+const HomeScreen = () => {
+  const [topVideos, setTopVideos] = useState<any[]>([]);
+  const [latestNews, setLatestNews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [videos, news] = await Promise.all([fetchTopVideos(), fetchNews()]);
+        setTopVideos(videos);
+        setLatestNews(news);
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const renderVideo = ({ item }: { item: any }) => (
+    <View style={styles.videoContainer}>
+      <Image source={{ uri: item.image }} style={styles.videoImage} />
+      <Text style={styles.videoTitle}>{item.title}</Text>
+    </View>
+  );
+
+  const renderNews = ({ item }: { item: any }) => (
+    <View style={styles.newsContainer}>
+      <Image source={{ uri: item.image }} style={styles.newsImage} />
+      <View style={styles.newsTextContainer}>
+        <Text style={styles.newsTitle}>{item.title}</Text>
+        <Text style={styles.newsSource}>{item.source}</Text>
       </View>
-    </ImageBackground>
+    </View>
+  );
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#ffffff" style={styles.loader} />;
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <FlatList
+        data={topVideos}
+        renderItem={renderVideo}
+        keyExtractor={(item) => item.id}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.videoList}
+      />
+
+      <Text style={styles.sectionTitle}>Latest News</Text>
+
+      <FlatList
+        data={latestNews}
+        renderItem={renderNews}
+        keyExtractor={(item) => item.id}
+        scrollEnabled={false}
+      />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    backgroundColor: '#221111',
-  },
   container: {
     flex: 1,
-    justifyContent: 'space-between',
-    padding: 16,
+    backgroundColor: '#231010',
   },
-  button: {
-    backgroundColor: '#890f0f',
-    borderRadius: 9999,
-    height: 48,
-    alignItems: 'center',
+  loader: {
+    flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    alignItems: 'center',
   },
-  buttonText: {
+  videoList: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  videoContainer: {
+    width: 96,
+    marginRight: 12,
+  },
+  videoImage: {
+    width: '100%',
+    aspectRatio: 3 / 5,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  videoTitle: {
+    color: 'white',
+    fontSize: 13,
+  },
+  sectionTitle: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: 'bold',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    paddingTop: 20,
+  },
+  newsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  newsImage: {
+    width: 100,
+    height: 56.25,
+    borderRadius: 8,
+  },
+  newsTextContainer: {
+    flex: 1,
+  },
+  newsTitle: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '500',
   },
-  bottomSpacer: {
-    height: 20,
+  newsSource: {
+    color: '#cb9090',
+    fontSize: 14,
+    marginTop: 4,
   },
 });
 
-export default WelcomeScreen;
+export default HomeScreen;
