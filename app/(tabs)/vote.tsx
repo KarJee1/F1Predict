@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import { collection, getDocs, query, orderBy, doc, setDoc, getDoc } from 'firebase/firestore';
-import { db, auth } from '@/constants/firebaseConfig';
+import { auth, db } from '@/constants/firebaseConfig';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface Driver {
   id: string;
@@ -33,7 +33,7 @@ const VoteScreen = () => {
       setLoading(true);
       try {
         // First, fetch all driver data
-        const driversCollection = collection(db, 'drivers');
+        const driversCollection = collection(db, 'Drivers');
         const driversSnapshot = await getDocs(driversCollection);
         const driversData = driversSnapshot.docs.map(doc => ({
           id: doc.id,

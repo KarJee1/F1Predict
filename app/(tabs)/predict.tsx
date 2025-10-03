@@ -1,8 +1,9 @@
 import { db } from '@/constants/firebaseConfig';
-import { collection, getDocs, orderBy, query, limit, where } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, limit, where, Timestamp } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
+import { useNavigation } from 'expo-router';
 
 interface Driver {
   id: string;
@@ -16,135 +17,164 @@ interface Race {
   id: string;
   race_name: string;
   sessions: {
-    race_start_utc: string;
+    race_start_utc: Timestamp;
   };
 }
 
+const getRankChipStyle = (index: number): ViewStyle => {
+  let backgroundColor;
+  if (index < 5) { // Top 5
+    backgroundColor = '#3E8E41'; // Green
+  } else if (index < 15) { // Next 10
+    backgroundColor = '#E57C23'; // Orange
+  } else { // Bottom 5
+    backgroundColor = '#A42A2A'; // Red
+  }
+  return {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    minWidth: 50,
+    alignItems: 'center',
+    backgroundColor,
+  };
+};
+
 const PredictScreen = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [nextRace, setNextRace] = useState<Race | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [countdown, setCountdown] = useState({
     days: 0,
     hours: 0,
     minutes: 0,
     seconds: 0,
   });
-  const [nextRace, setNextRace] = useState<Race | null>(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchNextRace = async () => {
+    const fetchData = async () => {
       try {
-        const racesCollection = collection(db, 'races');
-        const now = new Date().toISOString();
-        const q = query(
-          racesCollection,
-          where('sessions.race_start_utc', '>', now),
+        const driversQuery = query(collection(db, 'Drivers'), orderBy("win_probability", "desc"));
+        const racesQuery = query(
+          collection(db, 'races'),
+          where('sessions.race_start_utc', '>', Timestamp.now()),
           orderBy('sessions.race_start_utc'),
           limit(1)
         );
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          const raceData = querySnapshot.docs[0].data() as Omit<Race, 'id'>;
-          setNextRace({ id: querySnapshot.docs[0].id, ...raceData });
+
+        const [driversSnapshot, raceSnapshot] = await Promise.all([
+          getDocs(driversQuery),
+          getDocs(racesQuery),
+        ]);
+
+        const driversData = driversSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Driver[];
+        setDrivers(driversData);
+
+        if (!raceSnapshot.empty) {
+          const raceData = raceSnapshot.docs[0].data() as Omit<Race, 'id'>;
+          setNextRace({ id: raceSnapshot.docs[0].id, ...raceData });
         }
       } catch (error) {
-        console.error("Error fetching next race: ", error);
+        console.error("Error fetching data: ", error);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchNextRace();
+
+    fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      navigation.setOptions({ title: nextRace ? nextRace.race_name : 'Predictions' });
+    }
+  }, [nextRace, isLoading, navigation]);
 
   useEffect(() => {
     if (!nextRace) return;
 
-    const calculateCountdown = () => {
-      const raceDate = new Date(nextRace.sessions.race_start_utc);
+    const timer = setInterval(() => {
+      const raceDate = nextRace.sessions.race_start_utc.toDate();
       const now = new Date();
       const difference = raceDate.getTime() - now.getTime();
 
       if (difference > 0) {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((difference / 1000 / 60) % 60);
-        const seconds = Math.floor((difference / 1000) % 60);
-        setCountdown({ days, hours, minutes, seconds });
+        setCountdown({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        });
       } else {
         setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        clearInterval(timer);
       }
-    };
+    }, 1000);
 
-    const timer = setInterval(calculateCountdown, 1000);
     return () => clearInterval(timer);
   }, [nextRace]);
 
-  useEffect(() => {
-    const fetchDrivers = async () => {
-      try {
-        const driversCollection = collection(db, 'drivers');
-        const q = query(driversCollection, orderBy("win_probability", "desc"));
-        const querySnapshot = await getDocs(q);
-        const driversData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Driver[];
-        setDrivers(driversData);
-      } catch (error) {
-        console.error("Error fetching drivers: ", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDrivers();
-  }, []);
-
   return (
     <View style={styles.container}>
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator size="large" color="#ffffff" style={styles.loader} />
       ) : (
         <ScrollView>
-          <View style={styles.countdownContainer}>
-            <View style={styles.countdownItem}>
-              <View style={styles.countdownValueContainer}>
-                <Text style={styles.countdownValue}>{countdown.days}</Text>
+          {nextRace ? (
+            <View style={styles.countdownContainer}>
+              <View style={styles.countdownItem}>
+                <View style={styles.countdownValueContainer}>
+                  <Text style={styles.countdownValue}>{countdown.days}</Text>
+                </View>
+                <Text style={styles.countdownLabel}>Days</Text>
               </View>
-              <Text style={styles.countdownLabel}>Days</Text>
-            </View>
-            <View style={styles.countdownItem}>
-              <View style={styles.countdownValueContainer}>
-                <Text style={styles.countdownValue}>{countdown.hours}</Text>
+              <View style={styles.countdownItem}>
+                <View style={styles.countdownValueContainer}>
+                  <Text style={styles.countdownValue}>{countdown.hours}</Text>
+                </View>
+                <Text style={styles.countdownLabel}>Hours</Text>
               </View>
-              <Text style={styles.countdownLabel}>Hours</Text>
-            </View>
-            <View style={styles.countdownItem}>
-              <View style={styles.countdownValueContainer}>
-                <Text style={styles.countdownValue}>{countdown.minutes}</Text>
+              <View style={styles.countdownItem}>
+                <View style={styles.countdownValueContainer}>
+                  <Text style={styles.countdownValue}>{countdown.minutes}</Text>
+                </View>
+                <Text style={styles.countdownLabel}>Minutes</Text>
               </View>
-              <Text style={styles.countdownLabel}>Minutes</Text>
-            </View>
-            <View style={styles.countdownItem}>
-              <View style={styles.countdownValueContainer}>
-                <Text style={styles.countdownValue}>{countdown.seconds}</Text>
+              <View style={styles.countdownItem}>
+                <View style={styles.countdownValueContainer}>
+                  <Text style={styles.countdownValue}>{countdown.seconds}</Text>
+                </View>
+                <Text style={styles.countdownLabel}>Seconds</Text>
               </View>
-              <Text style={styles.countdownLabel}>Seconds</Text>
             </View>
-          </View>
+          ) : (
+            <View style={styles.noRaceContainer}>
+              <Text style={styles.noRaceText}>No upcoming races found.</Text>
+            </View>
+          )}
 
-          <Text style={styles.driversHeader}>Predicted Finishing Positions</Text>
+          <Text style={styles.driversHeader}>
+            {nextRace ? 'Predicted Finishing Positions' : 'Driver Power Rankings'}
+          </Text>
 
           {drivers.map((driver, index) => (
             <View key={driver.id} style={styles.driverContainer}>
               <View style={styles.driverInfo}>
-                <Image
-                  source={{ uri: driver.pictures }}
-                  style={styles.driverImage}
-                />
+                <Image source={{ uri: driver.pictures }} style={styles.driverImage} />
                 <View>
                   <Text style={styles.driverName}>{driver.driver}</Text>
                   <Text style={styles.driverTeam}>{driver.teams}</Text>
                 </View>
               </View>
-              <Text style={styles.driverPosition}>{index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'}</Text>
+              <View style={styles.rightColumn}>
+                <View style={getRankChipStyle(index)}>
+                  <Text style={styles.probabilityText}>
+                    {`${driver.win_probability.toFixed(1)}%`}
+                  </Text>
+                </View>
+                <Text style={styles.driverPosition}>{index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'}</Text>
+              </View>
             </View>
           ))}
 
@@ -166,97 +196,118 @@ const PredictScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#221111',
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  countdownContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 16,
-  },
-  countdownItem: {
-    alignItems: 'center',
-  },
-  countdownValueContainer: {
-    backgroundColor: '#482323',
-    padding: 16,
-    borderRadius: 8,
-  },
-  countdownValue: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  countdownLabel: {
-    color: 'white',
-    fontSize: 14,
-    marginTop: 8,
-  },
-  driversHeader: {
-    color: 'white',
-    fontSize: 22,
-    fontWeight: 'bold',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 20,
-  },
-  driverContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    minHeight: 72,
-  },
-  driverInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  driverImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-  driverName: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  driverTeam: {
-    color: '#c99292',
-    fontSize: 14,
-  },
-  driverPosition: {
-    color: 'white',
-    fontSize: 16,
-  },
-  reasoningContainer: {
-    margin: 16,
-    backgroundColor: '#482323',
-    borderRadius: 12,
-    padding: 16,
-  },
-  reasoningHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingBottom: 8,
-  },
-  reasoningHeaderText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  reasoningText: {
-    color: '#c99292',
-    fontSize: 14,
-  },
-});
+    container: {
+      flex: 1,
+      backgroundColor: '#221111',
+    },
+    loader: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    noRaceContainer: {
+      padding: 20,
+      alignItems: 'center',
+    },
+    noRaceText: {
+      color: 'white',
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    countdownContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      padding: 16,
+    },
+    countdownItem: {
+      alignItems: 'center',
+    },
+    countdownValueContainer: {
+      backgroundColor: '#482323',
+      padding: 16,
+      borderRadius: 8,
+    },
+    countdownValue: {
+      color: 'white',
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    countdownLabel: {
+      color: 'white',
+      fontSize: 14,
+      marginTop: 8,
+    },
+    driversHeader: {
+      color: 'white',
+      fontSize: 22,
+      fontWeight: 'bold',
+      paddingHorizontal: 16,
+      paddingBottom: 12,
+      paddingTop: 20,
+    },
+    driverContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+      minHeight: 72,
+    },
+    driverInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    driverImage: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+    },
+    driverName: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    driverTeam: {
+      color: '#c99292',
+      fontSize: 14,
+    },
+    rightColumn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    probabilityText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 12,
+    },
+    driverPosition: {
+      color: 'white',
+      fontSize: 16,
+      width: 30, // Ensure consistent width for alignment
+      textAlign: 'right',
+    },
+    reasoningContainer: {
+      margin: 16,
+      backgroundColor: '#482323',
+      borderRadius: 12,
+      padding: 16,
+    },
+    reasoningHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingBottom: 8,
+    },
+    reasoningHeaderText: {
+      color: 'white',
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    reasoningText: {
+      color: '#c99292',
+      fontSize: 14,
+    },
+  });
 
 export default PredictScreen;

@@ -16,7 +16,6 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: true,
-        headerTitle: 'F1 Predictions',
         headerStyle: {
           backgroundColor: '#221111',
           borderBottomWidth: 0,
@@ -32,7 +31,6 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
           },
           default: {},
@@ -41,6 +39,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          title: 'Home',
           tabBarLabel: 'Home',
           headerShown: true,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
@@ -49,6 +48,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="predict"
         options={{
+          title: 'Predict', // Add default title here
           tabBarLabel: 'Predict',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="trophy.fill" color={color} />,
         }}
@@ -56,6 +56,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="vote"
         options={{
+          title: 'Vote',
           tabBarLabel: 'Vote',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
         }}
@@ -63,6 +64,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="leaderboard"
         options={{
+          title: 'Leaderboard',
           tabBarLabel: 'Leaderboard',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.3.fill" color={color} />,
         }}
@@ -70,6 +72,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          title: 'Profile',
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle" color={color} />,
         }}
