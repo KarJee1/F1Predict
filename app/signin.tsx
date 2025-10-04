@@ -8,6 +8,7 @@ import {
   Alert,
   ImageBackground,
   ScrollView,
+  Image,
 } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/constants/firebaseConfig';
@@ -38,6 +39,7 @@ const SignInScreen = () => {
         style={styles.headerImage}
       />
       <View style={styles.contentContainer}>
+        <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
         <Text style={styles.title}>Welcome Back</Text>
         <TextInput
           style={styles.input}
@@ -80,6 +82,12 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+    alignItems: 'center',
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
   },
   title: {
     color: 'white',
@@ -97,6 +105,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
     marginBottom: 16,
+    width: '100%',
   },
   buttonContainer: {
     paddingHorizontal: 16,
