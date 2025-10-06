@@ -1,18 +1,19 @@
+import { fetchNews } from '@/api/news';
+import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, FlatList } from 'react-native';
-import { fetchNews, fetchTopVideos } from '@/api/news';
+import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const HomeScreen = () => {
-  const [topVideos, setTopVideos] = useState<any[]>([]);
+  const [topNews, setTopNews] = useState<any[]>([]);
   const [latestNews, setLatestNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [videos, news] = await Promise.all([fetchTopVideos(), fetchNews()]);
-        setTopVideos(videos);
-        setLatestNews(news);
+        const { topNews, latestNews } = await fetchNews();
+        setTopNews(topNews);
+        setLatestNews(latestNews);
       } catch (error) {
         console.error("Error fetching data: ", error);
       } finally {
@@ -23,20 +24,24 @@ const HomeScreen = () => {
   }, []);
 
   const renderVideo = ({ item }: { item: any }) => (
-    <View style={styles.videoContainer}>
-      <Image source={{ uri: item.image }} style={styles.videoImage} />
-      <Text style={styles.videoTitle}>{item.title}</Text>
-    </View>
+    <Link href={{ pathname: '/story', params: { title: item.title, story: item.story, image: item.image } }} asChild>
+      <TouchableOpacity style={styles.videoContainer}>
+        <Image source={{ uri: item.image }} style={styles.videoImage} />
+        <Text style={styles.videoTitle}>{item.title}</Text>
+      </TouchableOpacity>
+    </Link>
   );
 
   const renderNews = ({ item }: { item: any }) => (
-    <View style={styles.newsContainer}>
-      <Image source={{ uri: item.image }} style={styles.newsImage} />
-      <View style={styles.newsTextContainer}>
-        <Text style={styles.newsTitle}>{item.title}</Text>
-        <Text style={styles.newsSource}>{item.source}</Text>
-      </View>
-    </View>
+    <Link href={{ pathname: '/story', params: { title: item.title, story: item.story, image: item.image } }} asChild>
+      <TouchableOpacity style={styles.newsContainer}>
+        <Image source={{ uri: item.image }} style={styles.newsImage} />
+        <View style={styles.newsTextContainer}>
+          <Text style={styles.newsTitle}>{item.title}</Text>
+          <Text style={styles.newsSource}>{item.subTitle}</Text>
+        </View>
+      </TouchableOpacity>
+    </Link>
   );
 
   if (loading) {
@@ -46,16 +51,14 @@ const HomeScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <FlatList
-        data={topVideos}
+        data={topNews}
         renderItem={renderVideo}
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.videoList}
       />
-
       <Text style={styles.sectionTitle}>Latest News</Text>
-
       <FlatList
         data={latestNews}
         renderItem={renderNews}
@@ -81,12 +84,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   videoContainer: {
-    width: 96,
+    width: 200,
     marginRight: 12,
   },
   videoImage: {
     width: '100%',
-    aspectRatio: 3 / 5,
+    aspectRatio: 16 / 9,
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -111,7 +114,7 @@ const styles = StyleSheet.create({
   },
   newsImage: {
     width: 100,
-    height: 56.25,
+    height: 100,
     borderRadius: 8,
   },
   newsTextContainer: {
