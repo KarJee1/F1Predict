@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "f1predictv1",
+    "name": "Race Predictions",
     "slug": "f1predictv1",
-    "version": "1.0.2",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "f1predictv1",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.karjee.f1predictv1",
-      "buildNumber": "6",
+      "buildNumber": "10",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

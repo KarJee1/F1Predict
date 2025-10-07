@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ImageBackground,
-  ScrollView,
-  Image,
-} from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/constants/firebaseConfig';
 import { router } from 'expo-router';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 const SignInScreen = () => {
   const [email, setEmail] = useState('');
@@ -34,12 +33,8 @@ const SignInScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <ImageBackground
-        source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDVATCXByJcpFWND26QOdhDi4lKi3AqjN-bhH1NvSQhQL9DjLzlH2_vnGL0gMifqudND1UydUnRiVuOiIzBSz6XrwCSVY1OQCapbU4xcHa2E3ky_vwMlObFKEx9z9IHgI4bsSpX9T0VfpgL-DsV_xShatNqFHsYlgOG-KBgVzyZQFiVGVY8_n161nfIAv_v19ikf04w097YLqiHP3LUmgxniK-UCtKFrbBtn_GxghsQjMT-hPM4oARAfErdsEc6BYZ9WwpygoALIqGE' }}
-        style={styles.headerImage}
-      />
       <View style={styles.contentContainer}>
-        <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
+        <Image source={require('@/assets/images/icon.png')} style={styles.logoSignin} />
         <Text style={styles.title}>Welcome Back</Text>
         <TextInput
           style={styles.input}
@@ -88,6 +83,12 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginBottom: 20,
+  },
+  logoSignin: {
+    marginTop: 100,
+    width: 250,
+    height: 250,
+    marginBottom: 0,
   },
   title: {
     color: 'white',

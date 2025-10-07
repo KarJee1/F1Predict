@@ -40,7 +40,7 @@ const LeaderboardScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {leaderboard.map((driver, index) => (
           <View key={driver.id} style={styles.driverContainer}>
             <View style={styles.driverInfo}>
@@ -67,6 +67,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   driverContainer: {
     flexDirection: 'row',

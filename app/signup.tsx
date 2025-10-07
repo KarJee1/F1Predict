@@ -1,17 +1,17 @@
+import { auth } from '@/constants/firebaseConfig';
+import { router } from 'expo-router';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
   Alert,
   ImageBackground,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '@/constants/firebaseConfig';
-import { router } from 'expo-router';
 
 const SignUpScreen = () => {
   const [fullName, setFullName] = useState('');
@@ -39,8 +39,8 @@ const SignUpScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <ImageBackground
-        source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDVATCXByJcpFWND26QOdhDi4lKi3AqjN-bhH1NvSQhQL9DjLzlH2_vnGL0gMifqudND1UydUnRiVuOiIzBSz6XrwCSVY1OQCapbU4xcHa2E3ky_vwMlObFKEx9z9IHgI4bsSpX9T0VfpgL-DsV_xShatNqFHsYlgOG-KBgVzyZQFiVGVY8_n161nfIAv_v19ikf04w097YLqiHP3LUmgxniK-UCtKFrbBtn_GxghsQjMT-hPM4oARAfErdsEc6BYZ9WwpygoALIqGE' }}
-        style={styles.headerImage}
+       source={require('@/assets/images/icon.png')}
+       style={styles.logoSignin}
       />
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Join the F1 Community</Text>
@@ -92,6 +92,13 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+  },
+  logoSignin: {
+    marginTop: 100,
+    width: 250,
+    height: 250,
+    marginBottom: 0,
+    marginLeft : 75
   },
   title: {
     color: 'white',
